@@ -21,7 +21,7 @@ void punch(sf::RenderWindow& window){
 }
 
 void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
-	const unsigned PLOT_WIDTH=200, PLOT_HEIGHT=100;
+	const unsigned PLOT_WIDTH=200, PLOT_HEIGHT=100, TEXT_HEIGHT=12;
 	unsigned x=0, y=0;
 	sf::Font font;
 	if(!font.loadFromMemory(sansation, sansationSize)) exit(-1);
@@ -30,7 +30,7 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		std::ifstream file(fileName);
 		if(!file.is_open()) continue;
 		//name
-		sf::Text name(fileName.c_str(), font, 12);
+		sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
 		name.setPosition(1.0f*x*PLOT_WIDTH, 1.0f*y*PLOT_HEIGHT);
 		window.draw(name);
 		//plot
@@ -40,8 +40,8 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		int valueMax=*std::max_element(v.begin(), v.end());
 		sf::VertexArray va(sf::LinesStrip);
 		for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
-			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH *j/v.size(),
-			1.0f*PLOT_HEIGHT*(y+1)-1.0f*PLOT_HEIGHT*(v[j]-valueMin)/(valueMax-valueMin)
+			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j/v.size(),
+			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)+TEXT_HEIGHT
 		)));
 		window.draw(va);
 		//next
