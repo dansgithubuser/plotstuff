@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <iostream>
 
 void punch(sf::RenderWindow& window){
 	sf::Texture t;
@@ -19,19 +20,20 @@ void punch(sf::RenderWindow& window){
 	window.display();
 }
 
-void draw(int argc, char** argv, sf::RenderWindow& window){
+void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 	const unsigned PLOT_WIDTH=200, PLOT_HEIGHT=100;
 	unsigned x=0, y=0;
 	sf::Font font;
 	if(!font.loadFromMemory(sansation, sansationSize)) exit(-1);
 	window.clear();
-	for(int i=1; i<argc; ++i){
+	for(auto fileName: fileNames){
+		std::ifstream file(fileName);
+		if(!file.is_open()) continue;
 		//name
-		sf::Text name(argv[i], font, 12);
+		sf::Text name(fileName.c_str(), font, 12);
 		name.setPosition(1.0f*x*PLOT_WIDTH, 1.0f*y*PLOT_HEIGHT);
 		window.draw(name);
 		//plot
-		std::ifstream file(argv[i]);
 		std::vector<int> v;
 		{ int value; while(file>>value) v.push_back(value); }
 		int valueMin=*std::min_element(v.begin(), v.end());
@@ -50,14 +52,21 @@ void draw(int argc, char** argv, sf::RenderWindow& window){
 }
 
 int main(int argc, char** argv){
+	//get file names from args and standard input
+	std::vector<std::string> fileNames;
+	for(int i=1; i<argc; ++i) fileNames.push_back(argv[i]);
+	std::string s;
+	while(std::cin>>s) fileNames.push_back(s);
+	//initial setup
 	sf::RenderWindow window(sf::VideoMode(800, 600), "plot stuff");
-	draw(argc, argv, window);
+	draw(fileNames, window);
+	//loop
 	while(window.isOpen()){
 		sf::Event event;
 		while(window.pollEvent(event)){
 			switch(event.type){
 				case sf::Event::KeyPressed:
-					if(event.key.code==sf::Keyboard::Space) draw(argc, argv, window);
+					if(event.key.code==sf::Keyboard::Space) draw(fileNames, window);
 					break;
 				case sf::Event::Closed:
 					window.close();
@@ -68,5 +77,6 @@ int main(int argc, char** argv){
 		window.display();
 		std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
+	//done
 	return 0;
 }
