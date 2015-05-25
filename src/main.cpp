@@ -52,14 +52,18 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 }
 
 int main(int argc, char** argv){
-	//get file names from args and standard input
+	//get file names from args
 	std::vector<std::string> fileNames;
-	for(int i=1; i<argc; ++i) fileNames.push_back(argv[i]);
-	std::string s;
-	while(std::cin>>s) fileNames.push_back(s);
+	std::cout<<"received files as args:\n";
+	for(int i=1; i<argc; ++i){
+		fileNames.push_back(argv[i]);
+		std::cout<<argv[i]<<"\n";
+	}
 	//initial setup
 	sf::RenderWindow window(sf::VideoMode(800, 600), "plot stuff");
+	std::cout<<"drawing\n";
 	draw(fileNames, window);
+	std::cout<<"draw finished, press space to redraw\n";
 	//loop
 	while(window.isOpen()){
 		sf::Event event;
