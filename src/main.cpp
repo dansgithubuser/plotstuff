@@ -40,8 +40,8 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		int valueMax=*std::max_element(v.begin(), v.end());
 		sf::VertexArray va(sf::LinesStrip);
 		for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
-			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j/v.size(),
-			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)+TEXT_HEIGHT
+			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j              /v.size(),
+			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)
 		)));
 		window.draw(va);
 		//next
