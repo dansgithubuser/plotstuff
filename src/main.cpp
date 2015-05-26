@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include <iostream>
+#include <sstream>
 
 void punch(sf::RenderWindow& window){
 	sf::Texture t;
@@ -40,10 +41,16 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		int valueMax=*std::max_element(v.begin(), v.end());
 		sf::VertexArray va(sf::LinesStrip);
 		for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
-			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j              /v.size(),
-			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)
+			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j                /v.size(),
+			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-2*TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)-TEXT_HEIGHT
 		)));
 		window.draw(va);
+		//range
+		std::stringstream ss;
+		ss<<"0.."<<v.size()<<", "<<valueMin<<".."<<valueMax;
+		sf::Text range(ss.str().c_str(), font, TEXT_HEIGHT);
+		range.setPosition(1.0f*x*PLOT_WIDTH, 1.0f*y*PLOT_HEIGHT+PLOT_HEIGHT-TEXT_HEIGHT);
+		window.draw(range);
 		//next
 		++x;
 		if(x*PLOT_WIDTH>=window.getSize().x){ x=0; ++y; }
