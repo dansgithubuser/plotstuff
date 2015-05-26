@@ -36,15 +36,19 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		window.draw(name);
 		//plot
 		std::vector<int> v;
+		int valueMin=0;
+		int valueMax=0;
 		{ int value; while(file>>value) v.push_back(value); }
-		int valueMin=*std::min_element(v.begin(), v.end());
-		int valueMax=*std::max_element(v.begin(), v.end());
-		sf::VertexArray va(sf::LinesStrip);
-		for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
-			1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j                /v.size(),
-			1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-2*TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)-TEXT_HEIGHT
-		)));
-		window.draw(va);
+		if(v.size()){
+			valueMin=*std::min_element(v.begin(), v.end());
+			valueMax=*std::max_element(v.begin(), v.end());
+			sf::VertexArray va(sf::LinesStrip);
+			for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
+				1.0f*PLOT_WIDTH *x    +1.0f*PLOT_WIDTH               *j                /v.size(),
+				1.0f*PLOT_HEIGHT*(y+1)-1.0f*(PLOT_HEIGHT-2*TEXT_HEIGHT)*(v[j]-valueMin)/(valueMax-valueMin)-TEXT_HEIGHT
+			)));
+			window.draw(va);
+		}
 		//range
 		std::stringstream ss;
 		ss<<"0.."<<v.size()<<", "<<valueMin<<".."<<valueMax;
