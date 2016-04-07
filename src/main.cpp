@@ -31,14 +31,15 @@ void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
 		std::ifstream file(fileName);
 		if(!file.is_open()) continue;
 		//name
+		fileName=fileName.substr(fileName.find_last_of("/\\")+1);
 		sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
 		name.setPosition(1.0f*x*PLOT_WIDTH, 1.0f*y*PLOT_HEIGHT);
 		window.draw(name);
 		//plot
-		std::vector<int> v;
-		int valueMin=0;
-		int valueMax=0;
-		{ int value; while(file>>value) v.push_back(value); }
+		std::vector<float> v;
+		float valueMin=0;
+		float valueMax=0;
+		{ float value; while(file>>value) v.push_back(value); }
 		if(v.size()){
 			valueMin=*std::min_element(v.begin(), v.end());
 			valueMax=*std::max_element(v.begin(), v.end());
