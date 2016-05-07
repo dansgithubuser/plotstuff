@@ -1,4 +1,8 @@
-import sys, glob, os, subprocess
+import argparse, glob, os, subprocess
+
+parser=argparse.ArgumentParser()
+parser.add_argument('globs', nargs='+', help='what to plot; list of globs')
+args=parser.parse_args()
 
 start_path=os.getcwd()
 script_path=os.path.split(os.path.realpath(__file__))[0]
@@ -11,6 +15,6 @@ if not os.path.isfile(plotstuff_path) and not os.path.isfile(plotstuff_path+'.ex
 	os.chdir(start_path)
 
 files=[]
-for arg in sys.argv[1:]: files+=glob.glob(arg)
+for i in args.globs: files+=glob.glob(i)
 files=[os.path.realpath(i) for i in files]
 subprocess.check_call([plotstuff_path]+files)
