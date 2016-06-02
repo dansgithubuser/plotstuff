@@ -13,6 +13,9 @@
 
 class Plot{
 	public:
+		static float scaleX(float xi, float xf){ return 800/(xf-xi); }
+		static float scaleY(float yi, float yf){ return 600/(yf-yi); }
+
 		void add(std::string type, std::string fileName){
 			_subplots.push_back({type, fileName});
 		}
@@ -49,9 +52,15 @@ class Plot{
 		void draw(sf::RenderTarget& target, const sf::Font& font, float xi, float xf, float yi, float yf){
 			unsigned x=0, y=0;
 			for(const auto& s: _subplots){
-				const unsigned PLOT_WIDTH=190, PLOT_HEIGHT=100, PLOT_SPACE_WIDTH=200, PLOT_SPACE_HEIGHT=110, TEXT_HEIGHT=12, TEXT_SPACE=16;
-				float originX=1.0f*x*PLOT_SPACE_WIDTH -xi;
-				float originY=1.0f*y*PLOT_SPACE_HEIGHT-yi;
+				const unsigned
+					PLOT_WIDTH =unsigned(190*scaleX(xi, xf)),
+					PLOT_HEIGHT=unsigned(100*scaleY(yi, yf)),
+					PLOT_SPACE_WIDTH =PLOT_WIDTH +10,
+					PLOT_SPACE_HEIGHT=PLOT_HEIGHT+10,
+					TEXT_HEIGHT=12,
+					TEXT_SPACE=16;
+				float originX=1.0f*x*PLOT_SPACE_WIDTH -xi*scaleX(xi, xf);
+				float originY=1.0f*y*PLOT_SPACE_HEIGHT-yi*scaleY(yi, yf);
 				//name
 				std::string fileName=s.fileName.substr(s.fileName.find_last_of("/\\")+1);
 				sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
@@ -123,11 +132,28 @@ int main(int argc, char** argv){
 				case sf::Event::MouseMoved:{
 					static sf::Event::MouseMoveEvent previous;
 					if(sf::Mouse::isButtonPressed(sf::Mouse::Left)){
-						auto dx=previous.x-event.mouseMove.x; xi+=dx; xf+=dx;
-						auto dy=previous.y-event.mouseMove.y; yi+=dy; yf+=dy;
+						auto dx=(previous.x-event.mouseMove.x)/Plot::scaleX(xi, xf); xi+=dx; xf+=dx;
+						auto dy=(previous.y-event.mouseMove.y)/Plot::scaleY(yi, yf); yi+=dy; yf+=dy;
 						draws=2;
 					}
 					previous=event.mouseMove;
+					break;
+				}
+				case sf::Event::MouseWheelScrolled:{
+					auto zoom=[](float& i, float& f, float delta, float center){
+						auto m=1+delta/10;
+						if(m<0.5f) m=0.5f;
+						if(m>2.0f) m=2.0f;
+						auto d=m*(f-i);
+						auto c=i+center*(f-i);
+						i=(1-center)*i+(  center)*(f-d);//if center is 0, then i remains untouched
+						f=(  center)*f+(1-center)*(i+d);//if center is 1, then f remains untouched
+					};
+					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+						zoom(xi, xf, event.mouseWheelScroll.delta, 1.0f*event.mouseWheelScroll.x/window.getSize().x);
+					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+						zoom(yi, yf, event.mouseWheelScroll.delta, 1.0f*event.mouseWheelScroll.y/window.getSize().y);
+					draws=2;
 					break;
 				}
 				case sf::Event::Closed:
