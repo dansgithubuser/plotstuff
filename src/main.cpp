@@ -50,8 +50,8 @@ class Plot{
 			unsigned x=0, y=0;
 			for(const auto& s: _subplots){
 				const unsigned PLOT_WIDTH=190, PLOT_HEIGHT=100, PLOT_SPACE_WIDTH=200, PLOT_SPACE_HEIGHT=110, TEXT_HEIGHT=12, TEXT_SPACE=16;
-				float originX=1.0f*x*PLOT_SPACE_WIDTH;
-				float originY=1.0f*y*PLOT_SPACE_HEIGHT;
+				float originX=1.0f*x*PLOT_SPACE_WIDTH -xi;
+				float originY=1.0f*y*PLOT_SPACE_HEIGHT-yi;
 				//name
 				std::string fileName=s.fileName.substr(s.fileName.find_last_of("/\\")+1);
 				sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
@@ -120,6 +120,16 @@ int main(int argc, char** argv){
 						draws=2;
 					}
 					break;
+				case sf::Event::MouseMoved:{
+					static sf::Event::MouseMoveEvent previous;
+					if(sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+						auto dx=previous.x-event.mouseMove.x; xi+=dx; xf+=dx;
+						auto dy=previous.y-event.mouseMove.y; yi+=dy; yf+=dy;
+						draws=2;
+					}
+					previous=event.mouseMove;
+					break;
+				}
 				case sf::Event::Closed:
 					window.close();
 					break;
