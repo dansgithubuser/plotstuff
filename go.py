@@ -1,6 +1,7 @@
 import argparse, glob, os, subprocess
 
 parser=argparse.ArgumentParser()
+parser.add_argument('--type', choices=['line', 'heat'], default='line')
 parser.add_argument('globs', nargs='+', help='what to plot; list of globs')
 args=parser.parse_args()
 
@@ -14,7 +15,8 @@ if not os.path.isfile(plotstuff_path) and not os.path.isfile(plotstuff_path+'.ex
 	subprocess.check_call('cmake --build .', shell=True)
 	os.chdir(start_path)
 
-files=[]
-for i in args.globs: files+=glob.glob(i)
-files=[os.path.realpath(i) for i in files]
-subprocess.check_call([plotstuff_path]+files)
+invocation=[plotstuff_path]
+for i in args.globs:
+	for j in glob.glob(i):
+		invocation+=[args.type, os.path.realpath(j)]
+subprocess.check_call(invocation)

@@ -11,80 +11,114 @@
 #include <iostream>
 #include <sstream>
 
-void punch(sf::RenderWindow& window){
-	sf::Texture t;
-	t.create(window.getSize().x, window.getSize().y);
-	t.update(window);
-	window.display();
-	sf::Sprite s(t, sf::IntRect(0, 0, window.getSize().x, window.getSize().y));
-	window.draw(s);
-	window.display();
-}
-
-void draw(const std::vector<std::string>& fileNames, sf::RenderWindow& window){
-	const unsigned PLOT_WIDTH=190, PLOT_HEIGHT=100, PLOT_SPACE_WIDTH=200, PLOT_SPACE_HEIGHT=110, TEXT_HEIGHT=12, TEXT_SPACE=16;
-	unsigned x=0, y=0;
-	sf::Font font;
-	if(!font.loadFromMemory(sansation, sansationSize)) exit(-1);
-	window.clear();
-	for(auto fileName: fileNames){
-		std::ifstream file(fileName);
-		if(!file.is_open()) continue;
-		float originX=1.0f*x*PLOT_SPACE_WIDTH;
-		float originY=1.0f*y*PLOT_SPACE_HEIGHT;
-		//name
-		fileName=fileName.substr(fileName.find_last_of("/\\")+1);
-		sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
-		name.setPosition(originX, originY);
-		window.draw(name);
-		//plot
-		std::vector<float> v;
-		float valueMin=0;
-		float valueMax=0;
-		{ float value; while(file>>value) v.push_back(value); }
-		if(v.size()){
-			valueMin=*std::min_element(v.begin(), v.end());
-			valueMax=*std::max_element(v.begin(), v.end());
-			sf::VertexArray va(sf::LinesStrip);
-			for(unsigned j=0; j<v.size(); ++j) va.append(sf::Vertex(sf::Vector2f(
-				originX                       +1.0f*PLOT_WIDTH                *j              /v.size(),
-				originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(v[j]-valueMin)/(valueMax-valueMin)
-			)));
-			window.draw(va);
+class Plot{
+	public:
+		void add(std::string type, std::string fileName){
+			_subplots.push_back({type, fileName});
 		}
-		//range
-		std::stringstream ss;
-		ss<<"0.."<<v.size()<<", "<<valueMin<<".."<<valueMax;
-		sf::Text range(ss.str().c_str(), font, TEXT_HEIGHT);
-		range.setPosition(originX, originY+PLOT_HEIGHT-TEXT_HEIGHT);
-		window.draw(range);
-		//next
-		++x;
-		if(x*PLOT_SPACE_WIDTH>=window.getSize().x){ x=0; ++y; }
-	}
-	punch(window);
-}
+
+		void plot(){
+			for(auto& s: _subplots){
+				//clear
+				s.x.clear();
+				s.y.clear();
+				//open
+				std::ifstream file(s.fileName);
+				if(!file.is_open()) continue;
+				//read
+				if(s.type=="line"){
+					float value;
+					int i=0;
+					while(file>>value){
+						s.x.push_back(float(i++));
+						s.y.push_back(value);
+					}
+				}
+				//range
+				if(s.x.size()){
+					s.xi=*std::min_element(s.x.begin(), s.x.end());
+					s.xf=*std::max_element(s.x.begin(), s.x.end());
+				}
+				if(s.y.size()){
+					s.yi=*std::min_element(s.y.begin(), s.y.end());
+					s.yf=*std::max_element(s.y.begin(), s.y.end());
+				}
+			}
+		}
+
+		void draw(sf::RenderTarget& target, const sf::Font& font, float xi, float xf, float yi, float yf){
+			unsigned x=0, y=0;
+			for(const auto& s: _subplots){
+				const unsigned PLOT_WIDTH=190, PLOT_HEIGHT=100, PLOT_SPACE_WIDTH=200, PLOT_SPACE_HEIGHT=110, TEXT_HEIGHT=12, TEXT_SPACE=16;
+				float originX=1.0f*x*PLOT_SPACE_WIDTH;
+				float originY=1.0f*y*PLOT_SPACE_HEIGHT;
+				//name
+				std::string fileName=s.fileName.substr(s.fileName.find_last_of("/\\")+1);
+				sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
+				name.setPosition(originX, originY);
+				target.draw(name);
+				//plot
+				if(s.type=="line"){
+					//line
+					sf::VertexArray va(sf::LinesStrip);
+					for(unsigned i=0; i<s.x.size(); ++i) va.append(sf::Vertex(sf::Vector2f(
+						originX                       +1.0f*(PLOT_WIDTH              )*(s.x[i]-s.xi)/(s.xf-s.xi),
+						originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(s.y[i]-s.yi)/(s.yf-s.yi)
+					)));
+					target.draw(va);
+					//range
+					std::stringstream ss;
+					ss<<s.xi<<".."<<s.xf<<", "<<s.yi<<".."<<s.yf;
+					sf::Text range(ss.str().c_str(), font, TEXT_HEIGHT);
+					range.setPosition(originX, originY+PLOT_HEIGHT-TEXT_HEIGHT);
+					target.draw(range);
+				}
+				//next
+				++x;
+				if(x>3){ x=0; ++y; }
+			}
+		}
+
+	private:
+		struct Subplot{
+			std::string type, fileName;
+			std::vector<float> x, y;
+			float xi, xf, yi, yf;
+		};
+
+		std::vector<Subplot> _subplots;
+};
 
 int main(int argc, char** argv){
-	//get file names from args
-	std::vector<std::string> fileNames;
-	std::cout<<"received files as args:\n";
-	for(int i=1; i<argc; ++i){
-		fileNames.push_back(argv[i]);
-		std::cout<<argv[i]<<"\n";
+	Plot plot;
+	//args
+	std::cout<<"received args:\n";
+	for(int i=1; i+1<argc; i+=2){
+		std::cout<<argv[i]<<" "<<argv[i+1]<<"\n";
+		plot.add(argv[i], argv[i+1]);
 	}
-	//initial setup
-	sf::RenderWindow window(sf::VideoMode(800, 600), "plot stuff");
-	std::cout<<"drawing\n";
-	draw(fileNames, window);
-	std::cout<<"draw finished, press space to redraw\n";
+	//plot
+	std::cout<<"plotting\n";
+	plot.plot();
+	std::cout<<"plot finished, press space to replot\n";
+	//geometry
+	float xi=0.0f, xf=800.0f, yi=0.0f, yf=600.0f;
+	//sfml
+	sf::RenderWindow window(sf::VideoMode(int(xf-xi), int(yf-yi)), "plot stuff");
+	window.setFramerateLimit(60);
+	sf::Font font;
+	if(!font.loadFromMemory(sansation, sansationSize)) exit(-1);
+	int draws=2;
 	//loop
 	while(window.isOpen()){
 		sf::Event event;
 		while(window.pollEvent(event)){
 			switch(event.type){
 				case sf::Event::KeyPressed:
-					if(event.key.code==sf::Keyboard::Space) draw(fileNames, window);
+					if(event.key.code==sf::Keyboard::Space){
+						plot.plot();
+						draws=2;
+					}
 					break;
 				case sf::Event::Closed:
 					window.close();
@@ -92,8 +126,12 @@ int main(int argc, char** argv){
 				default: break;
 			}
 		}
+		if(draws){
+			window.clear();
+			plot.draw(window, font, xi, xf, yi, yf);
+			--draws;
+		}
 		window.display();
-		std::this_thread::sleep_for(std::chrono::milliseconds(20));
 	}
 	//done
 	return 0;
