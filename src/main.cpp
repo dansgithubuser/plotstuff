@@ -60,6 +60,11 @@ class Plot{
 							std::getline(file, label);
 							s.yLabels.push_back(std::make_pair(y, label));
 						}
+						else if(c=="ycolor"){
+							int y, r, g, b, a;
+							if(!(file>>y&&file>>r&&file>>g&&file>>b&&file>>a)) break;
+							s.yColors[y]=sf::Color(r, g, b, a);
+						}
 						else if(c=="hover"){
 							int x, y;
 							if(!(file>>x&&file>>y)) break;
@@ -139,12 +144,14 @@ class Plot{
 						float rxf=rxi                         +1.0f*(plotWidth             )*(          1)/(s.xf-s.xi+1);
 						float ryi=originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
 						float ryf=ryi                         -1.0f*(plotHeight-2*textSpace)*(          1)/(s.yf-s.yi+1);
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(255, 0, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(255, 0, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryi), sf::Color(255, 0, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(255, 0, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(255, 0, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryf), sf::Color(255, 0, 0)));
+						sf::Color color(255, 0, 0);
+						if(s.yColors.count(int(s.y[i]))) color=s.yColors.at(int(s.y[i]));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), color));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), color));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryi), color));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), color));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), color));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryf), color));
 					}
 					target.draw(va);
 				}
@@ -191,6 +198,7 @@ class Plot{
 			std::vector<float> x, y;
 			float xi, xf, yi, yf;
 			std::vector<std::pair<float, std::string>> yLabels;
+			std::map<int, sf::Color> yColors;
 			std::map<int, std::map<int, std::string>> hovers;
 		};
 
