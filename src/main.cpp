@@ -55,14 +55,16 @@ class Plot{
 						if(c=="end") break;
 						else if(c=="ylabel"){
 							float y;
+							if(!(file>>y)) break;
 							std::string label;
-							if(!(file>>y&&file>>label)) break;
+							std::getline(file, label);
 							s.yLabels.push_back(std::make_pair(y, label));
 						}
 						else if(c=="hover"){
 							int x, y;
+							if(!(file>>x&&file>>y)) break;
 							std::string text;
-							if(!(file>>x&&file>>y&&file>>text)) break;
+							std::getline(file, text);
 							s.hovers[x][y]=text;
 						}
 					}
