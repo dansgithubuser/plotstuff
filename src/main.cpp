@@ -2,19 +2,39 @@
 
 #include <SFML/Graphics.hpp>
 
-#include <fstream>
+#include <algorithm>
 #include <chrono>
+#include <fstream>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
 #include <thread>
 #include <vector>
-#include <algorithm>
-#include <string>
-#include <iostream>
-#include <sstream>
 
 class Plot{
 	public:
 		static float scaleX(float xi, float xf){ return 800/(xf-xi); }
 		static float scaleY(float yi, float yf){ return 600/(yf-yi); }
+
+		static void subplotAttributes(
+			unsigned i,
+			float xi, float xf, float yi, float yf,
+			unsigned& width, unsigned& height,
+			unsigned& spaceWidth, unsigned& spaceHeight,
+			unsigned& textHeight, unsigned& textSpace,
+			float& originX, float& originY
+		){
+			unsigned x=i%4, y=i/4;
+			width =unsigned(190*scaleX(xi, xf));
+			height=unsigned(100*scaleY(yi, yf));
+			spaceWidth =width +10;
+			spaceHeight=height+10;
+			textHeight=12,
+			textSpace=16;
+			originX=1.0f*x*spaceWidth -xi*scaleX(xi, xf);
+			originY=1.0f*y*spaceHeight-yi*scaleY(yi, yf);
+		}
 
 		void add(std::string type, std::string fileName){
 			_subplots.push_back({type, fileName});
@@ -38,6 +58,12 @@ class Plot{
 							std::string label;
 							if(!(file>>y&&file>>label)) break;
 							s.yLabels.push_back(std::make_pair(y, label));
+						}
+						else if(c=="hover"){
+							int x, y;
+							std::string text;
+							if(!(file>>x&&file>>y&&file>>text)) break;
+							s.hovers[x][y]=text;
 						}
 					}
 				}
@@ -71,20 +97,15 @@ class Plot{
 		}
 
 		void draw(sf::RenderTarget& target, const sf::Font& font, float xi, float xf, float yi, float yf){
-			unsigned x=0, y=0;
-			for(const auto& s: _subplots){
-				const unsigned
-					PLOT_WIDTH =unsigned(190*scaleX(xi, xf)),
-					PLOT_HEIGHT=unsigned(100*scaleY(yi, yf)),
-					PLOT_SPACE_WIDTH =PLOT_WIDTH +10,
-					PLOT_SPACE_HEIGHT=PLOT_HEIGHT+10,
-					TEXT_HEIGHT=12,
-					TEXT_SPACE=16;
-				float originX=1.0f*x*PLOT_SPACE_WIDTH -xi*scaleX(xi, xf);
-				float originY=1.0f*y*PLOT_SPACE_HEIGHT-yi*scaleY(yi, yf);
+			for(unsigned j=0; j<_subplots.size(); ++j){
+				unsigned plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace;
+				float originX, originY;
+				subplotAttributes(j, xi, xf, yi, yf,
+					plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace, originX, originY);
+				const auto& s=_subplots[j];
 				//name
 				std::string fileName=s.fileName.substr(s.fileName.find_last_of("/\\")+1);
-				sf::Text name(fileName.c_str(), font, TEXT_HEIGHT);
+				sf::Text name(fileName.c_str(), font, textHeight);
 				name.setPosition(originX, originY);
 				target.draw(name);
 				//plot
@@ -92,45 +113,69 @@ class Plot{
 					//line
 					sf::VertexArray va(sf::LinesStrip);
 					for(unsigned i=0; i<s.x.size(); ++i) va.append(sf::Vertex(sf::Vector2f(
-						originX                       +1.0f*(PLOT_WIDTH              )*(s.x[i]-s.xi)/(s.xf-s.xi),
-						originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(s.y[i]-s.yi)/(s.yf-s.yi)
+						originX                     +1.0f*(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi),
+						originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi)
 					)));
 					target.draw(va);
 					//range
 					std::stringstream ss;
 					ss<<s.xi<<".."<<s.xf<<", "<<s.yi<<".."<<s.yf;
-					sf::Text range(ss.str().c_str(), font, TEXT_HEIGHT);
-					range.setPosition(originX, originY+PLOT_HEIGHT-TEXT_HEIGHT);
+					sf::Text range(ss.str().c_str(), font, textHeight);
+					range.setPosition(originX, originY+plotHeight-textHeight);
 					target.draw(range);
 				}
 				else if(s.type=="heat"){
 					//heat
 					sf::VertexArray va(sf::Triangles);
 					for(unsigned i=0; i<s.x.size(); ++i){
-						float rxi=originX                       +1.0f*(PLOT_WIDTH              )*(s.x[i]-s.xi)/(s.xf-s.xi+1);
-						float rxf=rxi                           +1.0f*(PLOT_WIDTH              )*(          1)/(s.xf-s.xi+1);
-						float ryi=originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
-						float ryf=ryi                           -1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(          1)/(s.yf-s.yi+1);
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(0, 255, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(0, 255, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryi), sf::Color(0, 255, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(0, 255, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(0, 255, 0)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryf), sf::Color(0, 255, 0)));
+						float rxi=originX                     +1.0f*(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi+1);
+						float rxf=rxi                         +1.0f*(plotWidth             )*(          1)/(s.xf-s.xi+1);
+						float ryi=originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
+						float ryf=ryi                         -1.0f*(plotHeight-2*textSpace)*(          1)/(s.yf-s.yi+1);
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(255, 0, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(255, 0, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryi), sf::Color(255, 0, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(255, 0, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(255, 0, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryf), sf::Color(255, 0, 0)));
 					}
 					target.draw(va);
 				}
 				//labels
 				for(auto i: s.yLabels){
-					sf::Text label(i.second.c_str(), font, TEXT_HEIGHT);
+					sf::Text label(i.second.c_str(), font, textHeight);
 					label.setPosition(originX,
-						originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(i.first+1-s.yi)/(s.yf-s.yi+1));
+						originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(i.first+1-s.yi)/(s.yf-s.yi+1));
 					target.draw(label);
 				}
-				//next
-				++x;
-				if(x>3){ x=0; ++y; }
+				//hover
+				sf::Text text(_hover.c_str(), font, textHeight);
+				text.setFillColor(sf::Color(0, 255, 0));
+				text.setPosition(0, 0);
+				target.draw(text);
 			}
+		}
+
+		bool hover(int x, int y, float xi, float xf, float yi, float yf){
+			std::string newHover="";
+			for(unsigned i=0; i<_subplots.size(); ++i){
+				unsigned plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace;
+				float originX, originY;
+				subplotAttributes(i, xi, xf, yi, yf,
+					plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace, originX, originY);
+				const auto& s=_subplots[i];
+				int px=int( (x-(originX                     ))/(plotWidth             )*(s.xf-s.xi+1)+s.xi);
+				int py=int(-(y-(originY+plotHeight-textSpace))/(plotHeight-2*textSpace)*(s.yf-s.yi+1)+s.yi);
+				if(s.hovers.count(px)&&s.hovers.at(px).count(py)){
+					newHover=s.hovers.at(px).at(py);
+					break;
+				}
+			}
+			if(newHover!=_hover){
+				_hover=newHover;
+				return true;
+			}
+			return false;
 		}
 
 	private:
@@ -139,9 +184,11 @@ class Plot{
 			std::vector<float> x, y;
 			float xi, xf, yi, yf;
 			std::vector<std::pair<float, std::string>> yLabels;
+			std::map<int, std::map<int, std::string>> hovers;
 		};
 
 		std::vector<Subplot> _subplots;
+		std::string _hover;
 };
 
 int main(int argc, char** argv){
@@ -183,6 +230,7 @@ int main(int argc, char** argv){
 						draws=2;
 					}
 					previous=event.mouseMove;
+					if(plot.hover(event.mouseMove.x, event.mouseMove.y, xi, xf, yi, yf)) draws=2;
 					break;
 				}
 				case sf::Event::MouseWheelScrolled:{
