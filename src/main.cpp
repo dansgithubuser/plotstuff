@@ -64,7 +64,12 @@ class Plot{
 							int x, y;
 							if(!(file>>x&&file>>y)) break;
 							std::string text;
-							std::getline(file, text);
+							while(true){
+								std::string t;
+								std::getline(file, t);
+								if(t=="") break;
+								text+=t+"\n";
+							}
 							s.hovers[x][y]=text;
 						}
 					}
