@@ -28,6 +28,20 @@ class Plot{
 				//open
 				std::ifstream file(s.fileName);
 				if(!file.is_open()) continue;
+				//commands
+				std::string c;
+				if(file>>c&&c=="begin"){
+					while(file>>c){
+						if(c=="end") break;
+						else if(c=="ylabel"){
+							float y;
+							std::string label;
+							if(!(file>>y&&file>>label)) break;
+							s.yLabels.push_back(std::make_pair(y, label));
+						}
+					}
+				}
+				else file.seekg(0);
 				//read
 				if(s.type=="line"){
 					float value;
@@ -97,14 +111,21 @@ class Plot{
 						float rxf=rxi                           +1.0f*(PLOT_WIDTH              )*(          1)/(s.xf-s.xi+1);
 						float ryi=originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
 						float ryf=ryi                           -1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(          1)/(s.yf-s.yi+1);
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryi)));
-						va.append(sf::Vertex(sf::Vector2f(rxf, ryf)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryi)));
-						va.append(sf::Vertex(sf::Vector2f(rxi, ryf)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(0, 255, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(0, 255, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryi), sf::Color(0, 255, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf), sf::Color(0, 255, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), sf::Color(0, 255, 0)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryf), sf::Color(0, 255, 0)));
 					}
 					target.draw(va);
+				}
+				//labels
+				for(auto i: s.yLabels){
+					sf::Text label(i.second.c_str(), font, TEXT_HEIGHT);
+					label.setPosition(originX,
+						originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(i.first+1-s.yi)/(s.yf-s.yi+1));
+					target.draw(label);
 				}
 				//next
 				++x;
@@ -117,6 +138,7 @@ class Plot{
 			std::string type, fileName;
 			std::vector<float> x, y;
 			float xi, xf, yi, yf;
+			std::vector<std::pair<float, std::string>> yLabels;
 		};
 
 		std::vector<Subplot> _subplots;
