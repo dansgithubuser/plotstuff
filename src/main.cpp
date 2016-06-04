@@ -156,6 +156,10 @@ int main(int argc, char** argv){
 					draws=2;
 					break;
 				}
+				case sf::Event::Resized:
+					window.setView(sf::View(sf::FloatRect(0.0f, 0.0f, float(event.size.width), float(event.size.height))));
+					draws=2;
+					break;
 				case sf::Event::Closed:
 					window.close();
 					break;
