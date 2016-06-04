@@ -37,6 +37,13 @@ class Plot{
 						s.y.push_back(value);
 					}
 				}
+				else if(s.type=="heat"){
+					float x, y;
+					while(file>>x&&file>>y){
+						s.x.push_back(x);
+						s.y.push_back(y);
+					}
+				}
 				//range
 				if(s.x.size()){
 					s.xi=*std::min_element(s.x.begin(), s.x.end());
@@ -81,6 +88,23 @@ class Plot{
 					sf::Text range(ss.str().c_str(), font, TEXT_HEIGHT);
 					range.setPosition(originX, originY+PLOT_HEIGHT-TEXT_HEIGHT);
 					target.draw(range);
+				}
+				else if(s.type=="heat"){
+					//heat
+					sf::VertexArray va(sf::Triangles);
+					for(unsigned i=0; i<s.x.size(); ++i){
+						float rxi=originX                       +1.0f*(PLOT_WIDTH              )*(s.x[i]-s.xi)/(s.xf-s.xi+1);
+						float rxf=rxi                           +1.0f*(PLOT_WIDTH              )*(          1)/(s.xf-s.xi+1);
+						float ryi=originY+PLOT_HEIGHT-TEXT_SPACE-1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
+						float ryf=ryi                           -1.0f*(PLOT_HEIGHT-2*TEXT_SPACE)*(          1)/(s.yf-s.yi+1);
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryi)));
+						va.append(sf::Vertex(sf::Vector2f(rxf, ryf)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryi)));
+						va.append(sf::Vertex(sf::Vector2f(rxi, ryf)));
+					}
+					target.draw(va);
 				}
 				//next
 				++x;
