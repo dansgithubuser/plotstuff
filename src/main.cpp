@@ -89,6 +89,13 @@ class Plot{
 						s.y.push_back(value);
 					}
 				}
+				else if(s.type=="scatter"){
+					float x, y;
+					while(file>>x&&file>>y){
+						s.x.push_back(x);
+						s.y.push_back(y);
+					}
+				}
 				else if(s.type=="heat"){
 					float x, y;
 					while(file>>x&&file>>y){
@@ -121,21 +128,24 @@ class Plot{
 				name.setPosition(originX, originY);
 				target.draw(name);
 				//plot
-				if(s.type=="line"){
-					//line
-					sf::VertexArray va(sf::LinesStrip);
+				auto cartesian2d=[&](std::string type){
+					sf::VertexArray va(std::map<std::string, sf::PrimitiveType>({
+						{"line", sf::LinesStrip},
+						{"scatter", sf::Points},
+					})[type]);
 					for(unsigned i=0; i<s.x.size(); ++i) va.append(sf::Vertex(sf::Vector2f(
 						originX                     +1.0f*(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi),
 						originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi)
 					)));
 					target.draw(va);
-					//range
 					std::stringstream ss;
 					ss<<s.xi<<".."<<s.xf<<", "<<s.yi<<".."<<s.yf;
 					sf::Text range(ss.str().c_str(), font, textHeight);
 					range.setPosition(originX, originY+plotHeight-textHeight);
 					target.draw(range);
-				}
+				};
+				if(s.type=="line") cartesian2d("line");
+				else if(s.type=="scatter") cartesian2d("scatter");
 				else if(s.type=="heat"){
 					//heat
 					sf::VertexArray va(sf::Triangles);
