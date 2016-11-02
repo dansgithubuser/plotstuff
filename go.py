@@ -56,7 +56,7 @@ class Parser():
 					if len(contents.values):
 						if hasattr(contents.values[0], '__iter__'): contents.type='scatter'
 						else: contents.type='line'
-					else: raise Exception("can't infer plot type")
+					else: contents.type='line'#default to line if no values
 				if contents.type=='line':
 					for value in contents.values: file.write('{}\n'.format(value))
 				elif contents.type in ['heat', 'scatter']:
