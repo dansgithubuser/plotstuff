@@ -14,16 +14,16 @@
 
 class Plot{
 	public:
-		static float scaleX(float xi, float xf){ return 800/(xf-xi); }
-		static float scaleY(float yi, float yf){ return 600/(yf-yi); }
+		static double scaleX(double xi, double xf){ return 800/(xf-xi); }
+		static double scaleY(double yi, double yf){ return 600/(yf-yi); }
 
 		static void subplotAttributes(
 			unsigned i,
-			float xi, float xf, float yi, float yf,
+			double xi, double xf, double yi, double yf,
 			unsigned& width, unsigned& height,
 			unsigned& spaceWidth, unsigned& spaceHeight,
 			unsigned& textHeight, unsigned& textSpace,
-			float& originX, float& originY
+			double& originX, double& originY
 		){
 			unsigned x=i%4, y=i/4;
 			width =unsigned(190*scaleX(xi, xf));
@@ -32,8 +32,8 @@ class Plot{
 			spaceHeight=height+10;
 			textHeight=12,
 			textSpace=16;
-			originX=1.0f*x*spaceWidth -xi*scaleX(xi, xf);
-			originY=1.0f*y*spaceHeight-yi*scaleY(yi, yf);
+			originX=x*spaceWidth -xi*scaleX(xi, xf);
+			originY=y*spaceHeight-yi*scaleY(yi, yf);
 		}
 
 		void add(std::string type, std::string fileName){
@@ -54,7 +54,7 @@ class Plot{
 					while(file>>c){
 						if(c=="end") break;
 						else if(c=="ylabel"){
-							float y;
+							double y;
 							if(!(file>>y)) break;
 							std::string label;
 							std::getline(file, label);
@@ -82,22 +82,22 @@ class Plot{
 				else file.seekg(0);
 				//read
 				if(s.type=="line"){
-					float value;
+					double value;
 					int i=0;
 					while(file>>value){
-						s.x.push_back(float(i++));
+						s.x.push_back(double(i++));
 						s.y.push_back(value);
 					}
 				}
 				else if(s.type=="scatter"){
-					float x, y;
+					double x, y;
 					while(file>>x&&file>>y){
 						s.x.push_back(x);
 						s.y.push_back(y);
 					}
 				}
 				else if(s.type=="heat"){
-					float x, y;
+					double x, y;
 					while(file>>x&&file>>y){
 						s.x.push_back(x);
 						s.y.push_back(y);
@@ -115,10 +115,10 @@ class Plot{
 			}
 		}
 
-		void draw(sf::RenderTarget& target, const sf::Font& font, float xi, float xf, float yi, float yf){
+		void draw(sf::RenderTarget& target, const sf::Font& font, double xi, double xf, double yi, double yf){
 			for(unsigned j=0; j<_subplots.size(); ++j){
 				unsigned plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace;
-				float originX, originY;
+				double originX, originY;
 				subplotAttributes(j, xi, xf, yi, yf,
 					plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace, originX, originY);
 				const auto& s=_subplots[j];
@@ -134,8 +134,8 @@ class Plot{
 						{"scatter", sf::Points},
 					})[type]);
 					for(unsigned i=0; i<s.x.size(); ++i) va.append(sf::Vertex(sf::Vector2f(
-						originX                     +1.0f*(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi),
-						originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi)
+						originX                     +(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi),
+						originY+plotHeight-textSpace-(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi)
 					)));
 					target.draw(va);
 					std::stringstream ss;
@@ -150,10 +150,10 @@ class Plot{
 					//heat
 					sf::VertexArray va(sf::Triangles);
 					for(unsigned i=0; i<s.x.size(); ++i){
-						float rxi=originX                     +1.0f*(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi+1);
-						float rxf=rxi                         +1.0f*(plotWidth             )*(          1)/(s.xf-s.xi+1);
-						float ryi=originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
-						float ryf=ryi                         -1.0f*(plotHeight-2*textSpace)*(          1)/(s.yf-s.yi+1);
+						double rxi=originX                     +(plotWidth             )*(s.x[i]-s.xi)/(s.xf-s.xi+1);
+						double rxf=rxi                         +(plotWidth             )*(          1)/(s.xf-s.xi+1);
+						double ryi=originY+plotHeight-textSpace-(plotHeight-2*textSpace)*(s.y[i]-s.yi)/(s.yf-s.yi+1);
+						double ryf=ryi                         -(plotHeight-2*textSpace)*(          1)/(s.yf-s.yi+1);
 						sf::Color color(255, 0, 0);
 						if(s.yColors.count(int(s.y[i]))) color=s.yColors.at(int(s.y[i]));
 						va.append(sf::Vertex(sf::Vector2f(rxi, ryi), color));
@@ -169,7 +169,7 @@ class Plot{
 				for(auto i: s.yLabels){
 					sf::Text label(i.second.c_str(), font, textHeight);
 					label.setPosition(originX,
-						originY+plotHeight-textSpace-1.0f*(plotHeight-2*textSpace)*(i.first+1-s.yi)/(s.yf-s.yi+1));
+						originY+plotHeight-textSpace-(plotHeight-2*textSpace)*(i.first+1-s.yi)/(s.yf-s.yi+1));
 					target.draw(label);
 				}
 				//hover
@@ -180,11 +180,11 @@ class Plot{
 			}
 		}
 
-		bool hover(int x, int y, float xi, float xf, float yi, float yf){
+		bool hover(int x, int y, double xi, double xf, double yi, double yf){
 			std::string newHover="";
 			for(unsigned i=0; i<_subplots.size(); ++i){
 				unsigned plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace;
-				float originX, originY;
+				double originX, originY;
 				subplotAttributes(i, xi, xf, yi, yf,
 					plotWidth, plotHeight, plotSpaceWidth, plotSpaceHeight, textHeight, textSpace, originX, originY);
 				const auto& s=_subplots[i];
@@ -205,9 +205,9 @@ class Plot{
 	private:
 		struct Subplot{
 			std::string type, fileName;
-			std::vector<float> x, y;
-			float xi, xf, yi, yf;
-			std::vector<std::pair<float, std::string>> yLabels;
+			std::vector<double> x, y;
+			double xi, xf, yi, yf;
+			std::vector<std::pair<double, std::string>> yLabels;
 			std::map<int, sf::Color> yColors;
 			std::map<int, std::map<int, std::string>> hovers;
 		};
@@ -229,7 +229,7 @@ int main(int argc, char** argv){
 	plot.plot();
 	std::cout<<"plot finished, press space to replot\n";
 	//geometry
-	float xi=0.0f, xf=800.0f, yi=0.0f, yf=600.0f;
+	double xi=0.0, xf=800.0, yi=0.0, yf=600.0;
 	//sfml
 	sf::RenderWindow window(sf::VideoMode(int(xf-xi), int(yf-yi)), "plot stuff");
 	window.setFramerateLimit(60);
@@ -259,24 +259,24 @@ int main(int argc, char** argv){
 					break;
 				}
 				case sf::Event::MouseWheelScrolled:{
-					auto zoom=[](float& i, float& f, float delta, float center){
+					auto zoom=[](double& i, double& f, double delta, double center){
 						auto m=1+delta/10;
-						if(m<0.5f) m=0.5f;
-						if(m>2.0f) m=2.0f;
+						if(m<0.5) m=0.5;
+						if(m>2.0) m=2.0;
 						auto d=m*(f-i);
 						auto c=i+center*(f-i);
 						i=(1-center)*i+(  center)*(f-d);//if center is 0, then i remains untouched
 						f=(  center)*f+(1-center)*(i+d);//if center is 1, then f remains untouched
 					};
 					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
-						zoom(xi, xf, event.mouseWheelScroll.delta, 1.0f*event.mouseWheelScroll.x/window.getSize().x);
+						zoom(xi, xf, event.mouseWheelScroll.delta, 1.0*event.mouseWheelScroll.x/window.getSize().x);
 					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
-						zoom(yi, yf, event.mouseWheelScroll.delta, 1.0f*event.mouseWheelScroll.y/window.getSize().y);
+						zoom(yi, yf, event.mouseWheelScroll.delta, 1.0*event.mouseWheelScroll.y/window.getSize().y);
 					draws=2;
 					break;
 				}
 				case sf::Event::Resized:
-					window.setView(sf::View(sf::FloatRect(0.0f, 0.0f, float(event.size.width), float(event.size.height))));
+					window.setView(sf::View(sf::FloatRect(0.0, 0.0, double(event.size.width), double(event.size.height))));
 					draws=2;
 					break;
 				case sf::Event::Closed:
