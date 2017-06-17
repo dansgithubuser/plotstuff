@@ -289,9 +289,9 @@ int main(int argc, char** argv){
 						i=(1-center)*i+(  center)*(f-d);//if center is 0, then i remains untouched
 						f=(  center)*f+(1-center)*(i+d);//if center is 1, then f remains untouched
 					};
-					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W))
+					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift))
 						zoom(xi, xf, event.mouseWheelScroll.delta, 1.0*event.mouseWheelScroll.x/window.getSize().x);
-					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A))
+					if(!sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LControl))
 						zoom(yi, yf, event.mouseWheelScroll.delta, 1.0*event.mouseWheelScroll.y/window.getSize().y);
 					draws=2;
 					break;
