@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -175,7 +176,7 @@ class Plot{
 					_hover=ss.str();
 					return true;
 				}
-				int pxi=int(px), pyi=int(py);
+				int pxi=int(std::floor(px)), pyi=int(std::floor(py));
 				if(s.hovers.count(pxi)&&s.hovers.at(pxi).count(pyi)){
 					newHover=s.hovers.at(pxi).at(pyi);
 					break;
